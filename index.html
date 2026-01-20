@@ -98,19 +98,18 @@
         .brand {
             display: flex;
             align-items: center;
-            gap: 12px;
+            gap: 20px;
         }
 
-        .logo-container {
-            width: 48px;
-            height: 48px;
-            background: linear-gradient(135deg, var(--primary) 0%, #1e40af 100%);
-            border-radius: var(--radius-md);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            box-shadow: var(--shadow-md);
+        .logo-img {
+            height: 60px;
+            width: auto;
+            object-fit: contain;
+            transition: var(--transition);
+        }
+
+        [data-theme="dark"] .logo-img {
+            filter: brightness(0) invert(1) opacity(0.9);
         }
 
         .brand-info h1 {
@@ -542,7 +541,7 @@
     <div class="app-container">
         <header>
             <div class="brand">
-                <div class="logo-container"><i data-lucide="file-text" size="28"></i></div>
+                <img src="logo-edomex.png" alt="Edomex Logo" class="logo-img">
                 <div class="brand-info">
                     <h1>Control de Oficios</h1>
                     <p id="current-date-display">Cargando fecha...</p>
