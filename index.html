@@ -1,0 +1,807 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestión de Oficios | Sistema Administrativo</title>
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700&display=swap"
+        rel="stylesheet">
+    <!-- Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Toast & Modals -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <style>
+        :root {
+            /* Color Palette - Premium Blue & Navy */
+            --primary: #2563eb;
+            --primary-hover: #1d4ed8;
+            --primary-soft: rgba(37, 99, 235, 0.1);
+            --secondary: #64748b;
+            --accent: #f43f5e;
+            --accent-hover: #e11d48;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --error: #ef4444;
+            --bg-body: #f8fafc;
+            --bg-card: #ffffff;
+            --bg-glass: rgba(255, 255, 255, 0.8);
+            --text-main: #0f172a;
+            --text-muted: #64748b;
+            --text-light: #94a3b8;
+            --border: #e2e8f0;
+            --radius-sm: 8px;
+            --radius-md: 12px;
+            --radius-lg: 20px;
+            --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+            --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        [data-theme="dark"] {
+            --bg-body: #0f172a;
+            --bg-card: #1e293b;
+            --bg-glass: rgba(30, 41, 59, 0.8);
+            --text-main: #f1f5f9;
+            --text-muted: #94a3b8;
+            --border: #334155;
+            --primary: #3b82f6;
+            --primary-soft: rgba(59, 130, 246, 0.2);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Inter', sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-body);
+            color: var(--text-main);
+            min-height: 100vh;
+            transition: var(--transition);
+            overflow-x: hidden;
+        }
+
+        h1,
+        h2,
+        h3,
+        .brand-name {
+            font-family: 'Outfit', sans-serif;
+        }
+
+        /* --- Layout --- */
+        .app-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px 0;
+            margin-bottom: 30px;
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .logo-container {
+            width: 48px;
+            height: 48px;
+            background: linear-gradient(135deg, var(--primary) 0%, #1e40af 100%);
+            border-radius: var(--radius-md);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            box-shadow: var(--shadow-md);
+        }
+
+        .brand-info h1 {
+            font-size: 1.5rem;
+            font-weight: 700;
+            letter-spacing: -0.025em;
+        }
+
+        .brand-info p {
+            font-size: 0.875rem;
+            color: var(--text-muted);
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+        }
+
+        /* --- Stats Dashboard --- */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .stat-card {
+            background-color: var(--bg-card);
+            padding: 24px;
+            border-radius: var(--radius-md);
+            border: 1px solid var(--border);
+            box-shadow: var(--shadow-sm);
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            transition: var(--transition);
+        }
+
+        .stat-card:hover {
+            transform: translateY(-4px);
+            box-shadow: var(--shadow-lg);
+            border-color: var(--primary);
+        }
+
+        .stat-icon {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background-color: var(--primary-soft);
+            color: var(--primary);
+        }
+
+        .stat-card.accent .stat-icon {
+            background-color: rgba(244, 63, 94, 0.1);
+            color: var(--accent);
+        }
+
+        .stat-card.success .stat-icon {
+            background-color: rgba(16, 185, 129, 0.1);
+            color: var(--success);
+        }
+
+        .stat-card.warning .stat-icon {
+            background-color: rgba(245, 158, 11, 0.1);
+            color: var(--warning);
+        }
+
+        .stat-data .number {
+            font-size: 1.875rem;
+            font-weight: 700;
+            line-height: 1;
+            margin-bottom: 4px;
+        }
+
+        .stat-data .label {
+            font-size: 0.875rem;
+            color: var(--text-muted);
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        /* --- Main Content Section --- */
+        .content-card {
+            background-color: var(--bg-card);
+            border-radius: var(--radius-md);
+            border: 1px solid var(--border);
+            box-shadow: var(--shadow-md);
+            overflow: hidden;
+            animation: slideUp 0.5s ease-out;
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .card-header {
+            padding: 24px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+
+        .card-title {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .card-title h2 {
+            font-size: 1.25rem;
+            font-weight: 600;
+        }
+
+        .search-box {
+            position: relative;
+            flex: 1;
+            min-width: 300px;
+        }
+
+        .search-box i {
+            position: absolute;
+            left: 14px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-light);
+            pointer-events: none;
+        }
+
+        .search-box input {
+            width: 100%;
+            padding: 12px 12px 12px 42px;
+            border: 1px solid var(--border);
+            border-radius: var(--radius-md);
+            background-color: var(--bg-body);
+            color: var(--text-main);
+            outline: none;
+            transition: var(--transition);
+        }
+
+        .search-box input:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 4px var(--primary-soft);
+        }
+
+        /* --- Table Styling --- */
+        .table-container {
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: left;
+        }
+
+        th {
+            background-color: var(--bg-body);
+            padding: 16px 24px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: var(--text-muted);
+            border-bottom: 2px solid var(--border);
+        }
+
+        td {
+            padding: 16px 24px;
+            font-size: 0.875rem;
+            border-bottom: 1px solid var(--border);
+            vertical-align: middle;
+        }
+
+        tr:hover td {
+            background-color: var(--primary-soft);
+        }
+
+        .badge {
+            padding: 6px 12px;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .badge-primary {
+            background: var(--primary-soft);
+            color: var(--primary);
+        }
+
+        .badge-success {
+            background: rgba(16, 185, 129, 0.1);
+            color: var(--success);
+        }
+
+        .badge-warning {
+            background: rgba(245, 158, 11, 0.1);
+            color: var(--warning);
+        }
+
+        .action-btns {
+            display: flex;
+            gap: 8px;
+        }
+
+        .btn-icon {
+            width: 36px;
+            height: 36px;
+            border-radius: var(--radius-sm);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 1px solid var(--border);
+            background: var(--bg-card);
+            color: var(--text-muted);
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .btn-icon:hover {
+            background-color: var(--primary);
+            color: white;
+            border-color: var(--primary);
+        }
+
+        .btn-icon.delete:hover {
+            background-color: var(--error);
+            border-color: var(--error);
+        }
+
+        .no-records {
+            padding: 60px;
+            text-align: center;
+            color: var(--text-light);
+        }
+
+        .no-records i {
+            margin-bottom: 16px;
+            opacity: 0.5;
+        }
+
+        /* --- PDF Buttons --- */
+        .btn-icon.pdf-upload {
+            color: var(--primary);
+        }
+
+        .btn-icon.pdf-view {
+            color: var(--success);
+            border-color: var(--success);
+            background-color: rgba(16, 185, 129, 0.05);
+        }
+
+        .btn-icon.pdf-view:hover {
+            background-color: var(--success);
+            color: white;
+        }
+
+        .pdf-group {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        /* --- Buttons --- */
+        .btn {
+            padding: 10px 20px;
+            border-radius: var(--radius-md);
+            font-size: 0.875rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition);
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            border: none;
+        }
+
+        .btn-primary {
+            background-color: var(--primary);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background-color: var(--primary-hover);
+            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+        }
+
+        .btn-outline {
+            background-color: transparent;
+            border: 1px solid var(--border);
+            color: var(--text-main);
+        }
+
+        .btn-outline:hover {
+            background-color: var(--bg-body);
+            border-color: var(--text-muted);
+        }
+
+        /* --- Modal --- */
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(4px);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .modal.active {
+            display: flex;
+            opacity: 1;
+        }
+
+        .modal-content {
+            background-color: var(--bg-card);
+            border-radius: var(--radius-lg);
+            width: 100%;
+            max-width: 600px;
+            padding: 32px;
+            box-shadow: var(--shadow-lg);
+            transform: scale(0.9);
+            transition: transform 0.3s ease;
+        }
+
+        .modal.active .modal-content {
+            transform: scale(1);
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        .full-width {
+            grid-column: span 2;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .form-group label {
+            font-size: 0.875rem;
+            font-weight: 600;
+            color: var(--text-muted);
+        }
+
+        .form-group input,
+        .form-group textarea,
+        .form-group select {
+            padding: 12px;
+            border: 1px solid var(--border);
+            border-radius: var(--radius-md);
+            background-color: var(--bg-body);
+            color: var(--text-main);
+            outline: none;
+        }
+
+        .form-group input:focus,
+        .form-group textarea:focus {
+            border-color: var(--primary);
+        }
+
+        /* --- New Filter Styles --- */
+        .date-filters {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+            background-color: var(--bg-body);
+            padding: 8px 16px;
+            border-radius: var(--radius-md);
+            border: 1px solid var(--border);
+        }
+
+        .filter-group {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .filter-group label {
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: var(--text-muted);
+            text-transform: uppercase;
+        }
+
+        .filter-group input {
+            padding: 6px 10px;
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            font-size: 0.875rem;
+            background: var(--bg-card);
+            color: var(--text-main);
+        }
+
+        .report-summary-print {
+            display: none;
+            margin-bottom: 20px;
+            padding: 15px;
+            border-bottom: 2px solid var(--primary);
+        }
+
+        /* --- Responsive --- */
+        @media (max-width: 768px) {
+            .form-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .full-width {
+                grid-column: span 1;
+            }
+
+            .header-info p {
+                display: none;
+            }
+
+            .search-box {
+                min-width: 100%;
+            }
+        }
+
+        /* Print Settings */
+        @media print {
+
+            .no-print,
+            header,
+            .card-header .btn,
+            .action-btns,
+            .header-actions {
+                display: none !important;
+            }
+
+            .app-container {
+                max-width: 100%;
+                padding: 0;
+            }
+
+            .content-card {
+                box-shadow: none;
+                border: none;
+            }
+
+            body {
+                background: white;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="app-container">
+        <!-- Header -->
+        <header>
+            <div class="brand">
+                <div class="logo-container">
+                    <i data-lucide="file-text" size="28"></i>
+                </div>
+                <div class="brand-info">
+                    <h1>Control de Oficios</h1>
+                    <p id="current-date-display">Sistema de Gestión Administrativa Professional</p>
+                </div>
+            </div>
+            <div class="header-actions no-print">
+                <button class="btn btn-outline" id="theme-toggle" title="Cambiar Tema">
+                    <i data-lucide="sun" id="theme-icon"></i>
+                </button>
+                <div class="dropdown">
+                    <button class="btn btn-outline" onclick="toggleBackupMenu()">
+                        <i data-lucide="database"></i> Datos
+                    </button>
+                    <!-- Backup Dropdown Hidden -->
+                    <div id="backup-menu"
+                        style="display:none; position:absolute; right:0; top:50px; background:var(--bg-card); border:1px solid var(--border); border-radius:var(--radius-md); box-shadow:var(--shadow-lg); z-index:100; padding:10px;">
+                        <button class="btn btn-outline" style="width:100%; justify-content:flex-start; border:none;"
+                            onclick="exportData()">
+                            <i data-lucide="download"></i> Exportar JSON
+                        </button>
+                        <button class="btn btn-outline" style="width:100%; justify-content:flex-start; border:none;"
+                            onclick="triggerImport()">
+                            <i data-lucide="upload"></i> Importar JSON
+                        </button>
+                    </div>
+                </div>
+                <button class="btn btn-outline" id="view-records-btn" title="Ir a la lista de registros">
+                    <i data-lucide="scroll-text"></i> Ver Registros
+                </button>
+                <button class="btn btn-outline" id="clear-all-btn"
+                    style="color: var(--error); border-color: var(--error);" title="Eliminar todos los registros">
+                    <i data-lucide="trash-2"></i> Limpiar
+                </button>
+                <button class="btn btn-primary" id="add-oficio-btn">
+                    <i data-lucide="plus"></i> Nuevo Registro
+                </button>
+            </div>
+        </header>
+        <!-- Stats Dashboard -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-icon"><i data-lucide="files"></i></div>
+                <div class="stat-data">
+                    <div class="number" id="stat-total">0</div>
+                    <div class="label">Total Oficios</div>
+                </div>
+            </div>
+            <div class="stat-card success">
+                <div class="stat-icon"><i data-lucide="calendar"></i></div>
+                <div class="stat-data">
+                    <div class="number" id="stat-month">0</div>
+                    <div class="label">Este Mes</div>
+                </div>
+            </div>
+            <div class="stat-card accent">
+                <div class="stat-icon"><i data-lucide="clock"></i></div>
+                <div class="stat-data">
+                    <div class="number" id="stat-week">0</div>
+                    <div class="label">Última Semana</div>
+                </div>
+            </div>
+            <div class="stat-card warning">
+                <div class="stat-icon"><i data-lucide="check-circle"></i></div>
+                <div class="stat-data">
+                    <div class="number" id="stat-year">0</div>
+                    <div class="label">Este Año</div>
+                </div>
+            </div>
+        </div>
+        <!-- Main Content -->
+        <div class="content-card">
+            <div class="card-header no-print">
+                <div class="card-title">
+                    <i data-lucide="list"></i>
+                    <h2>Registros Recientes</h2>
+                </div>
+                <div class="search-box">
+                    <i data-lucide="search"></i>
+                    <input type="text" id="search-input" placeholder="Buscar por número, asunto o destinatario...">
+                </div>
+                <!-- Date Filters -->
+                <div class="date-filters no-print">
+                    <div class="filter-group">
+                        <label>Desde:</label>
+                        <input type="date" id="filter-from">
+                    </div>
+                    <div class="filter-group">
+                        <label>Hasta:</label>
+                        <input type="date" id="filter-to">
+                    </div>
+                    <button class="btn btn-outline" id="clear-filters" title="Limpiar Filtros">
+                        <i data-lucide="filter-x"></i>
+                    </button>
+                </div>
+                <div class="btn-group">
+                    <button class="btn btn-primary" id="print-btn">
+                        <i data-lucide="printer"></i> Generar Reporte
+                    </button>
+                    <button class="btn btn-outline" id="export-filtered-btn" title="Exportar filtrados">
+                        <i data-lucide="file-down"></i>
+                    </button>
+                </div>
+            </div>
+            <div class="table-container">
+                <table id="oficios-table">
+                    <thead>
+                        <tr>
+                            <th>Fecha</th>
+                            <th>Nº Oficio</th>
+                            <th>Asunto</th>
+                            <th>Destinatario</th>
+                            <th>Solicitante</th>
+                            <th>Estado</th>
+                            <th class="no-print">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody id="table-body">
+                        <!-- Content via JS -->
+                    </tbody>
+                </table>
+                <div id="no-records-view" class="no-records" style="display: none;">
+                    <i data-lucide="inbox" size="48"></i>
+                    <p>No se encontraron registros de oficios.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- Modal Form -->
+    <div class="modal" id="oficio-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="modal-title">Nuevo Registro de Oficio</h2>
+                <button class="btn-icon" id="close-modal"><i data-lucide="x"></i></button>
+            </div>
+            <form id="oficio-form">
+                <input type="hidden" id="edit-id">
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label for="fecha">Fecha del Oficio</label>
+                        <input type="date" id="fecha" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="numero">Número de Oficio</label>
+                        <input type="text" id="numero" placeholder="Ej: OF-2025-001" required>
+                    </div>
+                    <div class="form-group full-width">
+                        <label for="asunto">Asunto / Motivo</label>
+                        <textarea id="asunto" rows="3" placeholder="Descripción detallada del asunto..."
+                            required></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="dirigido">Dirigido A</label>
+                        <input type="text" id="dirigido" placeholder="Nombre o Dependencia" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="solicita">Solicitado Por</label>
+                        <input type="text" id="solicita" placeholder="Nombre del solicitante" required>
+                    </div>
+                    <div class="form-group full-width">
+                        <label for="estado">Estado</label>
+                        <select id="estado">
+                            <option value="Registrado">Registrado</option>
+                            <option value="En Proceso">En Proceso</option>
+                            <option value="Concluido">Concluido</option>
+                            <option value="Cancelado">Cancelado</option>
+                        </select>
+                    </div>
+                </div>
+                <div style="margin-top: 32px; display: flex; justify-content: flex-end; gap: 12px;">
+                    <button type="button" class="btn btn-outline" id="cancel-form">Cancelar</button>
+                    <button type="submit" class="btn btn-primary" id="save-btn">Guardar Registro</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    <!-- Hidden file inputs -->
+    <input type="file" id="import-input" style="display:none" accept=".json">
+    <input type="file" id="pdf-input" style="display:none" accept="application/pdf">
+    <script>
+        /* --- Core Logic: Oficio Manager --- */
+        class OficioManager {
+            constructor() {
+                this.STORAGE_KEY = 'oficios_database_final'; // Nueva llave para asegurar consistencia
+                this.OLD_KEYS = ['v2_oficios_db', 'oficios_db', 'registros_oficios'];
+                this.oficios = this.load();
+                this.migrateOldData();
+            }
+            load() {
+                try {
+                    const data = localStorage.getItem(this.STORAGE_KEY);
+                    if (!data) return [];
+                    const parsed = JSON.parse(data);
+                    return Array.isArray(parsed) ? parsed : [];
+                } catch (e) {
+                    console.error("Error al cargar datos:", e);
+                    // Intento de recuperación si hay datos corruptos
+                    return [];
+                }
+            }
+            // Logic continues...
+        }
+    </script>
+</body>
+
+</html>
