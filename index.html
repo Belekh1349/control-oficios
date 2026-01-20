@@ -799,8 +799,442 @@
                     return [];
                 }
             }
-            // Logic continues...
+            migrateOldData() {
+                // Si la nueva llave está vacía, buscamos en llaves anteriores
+                if (this.oficios.length === 0) {
+                    for (const oldKey of this.OLD_KEYS) {
+                        try {
+                            const oldData = localStorage.getItem(oldKey);
+                            if (oldData) {
+                                const parsed = JSON.parse(oldData);
+                                if (Array.isArray(parsed) && parsed.length > 0) {
+                                    this.oficios = parsed;
+                                    this.save();
+                                    console.log(`Datos migrados desde ${oldKey}`);
+                                    break;
+                                }
+                            }
+                        } catch (e) {
+                            console.warn(`No se pudo migrar desde ${oldKey}`, e);
+                        }
+                    }
+                }
+            }
+            save() {
+                try {
+                    localStorage.setItem(this.STORAGE_KEY, JSON.stringify(this.oficios));
+                    // Verificación extra
+                    const savedData = localStorage.getItem(this.STORAGE_KEY);
+                    if (!savedData || JSON.parse(savedData).length !== this.oficios.length) {
+                        throw new Error("Verificación de guardado fallida");
+                    }
+                    console.log("Datos guardados. Total:", this.oficios.length);
+                } catch (e) {
+                    console.error("Error crítico al guardar en localStorage:", e);
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Error de Persistencia',
+                        text: 'No se pudieron guardar los datos. Asegúrate de que tu navegador no esté en modo incógnito o tenga restricciones de archivos locales.',
+                        footer: 'Si usas Safari en Mac, revisa el menú Desarrollo > Desactivar restricciones de archivos locales.'
+                    });
+                }
+            }
+            clearAll() {
+                this.oficios = [];
+                this.save();
+            }
+            add(oficio) {
+                oficio.id = Date.now().toString();
+                oficio.createdAt = new Date().toISOString();
+                this.oficios.unshift(oficio);
+                this.save();
+                return oficio;
+            }
+            update(id, updatedData) {
+                const index = this.oficios.findIndex(o => o.id === id);
+                if (index !== -1) {
+                    this.oficios[index] = { ...this.oficios[index], ...updatedData, updatedAt: new Date().toISOString() };
+                    this.save();
+                    return true;
+                }
+                return false;
+            }
+            delete(id) {
+                this.oficios = this.oficios.filter(o => o.id !== id);
+                this.save();
+            }
+            getById(id) {
+                return this.oficios.find(o => o.id === id);
+            }
+            search(query, fromDate, toDate) {
+                let filtered = this.oficios;
+                if (query) {
+                    query = query.toLowerCase();
+                    filtered = filtered.filter(o =>
+                        o.numero.toLowerCase().includes(query) ||
+                        o.asunto.toLowerCase().includes(query) ||
+                        o.dirigido.toLowerCase().includes(query) ||
+                        o.solicita.toLowerCase().includes(query)
+                    );
+                }
+                if (fromDate) {
+                    filtered = filtered.filter(o => o.fecha >= fromDate);
+                }
+                if (toDate) {
+                    filtered = filtered.filter(o => o.fecha <= toDate);
+                }
+                return filtered;
+            }
+            getStats() {
+                const now = new Date();
+                const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+                const startOfYear = new Date(now.getFullYear(), 0, 1);
+                const oneWeekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+                return {
+                    total: this.oficios.length,
+                    month: this.oficios.filter(o => new Date(o.fecha) >= startOfMonth).length,
+                    year: this.oficios.filter(o => new Date(o.fecha) >= startOfYear).length,
+                    week: this.oficios.filter(o => new Date(o.fecha) >= oneWeekAgo).length
+                };
+            }
         }
+        /* --- UI Controller --- */
+        const manager = new OficioManager();
+        let currentSearchQuery = '';
+        let currentFromDate = '';
+        let currentToDate = '';
+        // DOM Elements
+        const tableBody = document.getElementById('table-body');
+        const noRecordsView = document.getElementById('no-records-view');
+        const oficioModal = document.getElementById('oficio-modal');
+        const oficioForm = document.getElementById('oficio-form');
+        const searchInput = document.getElementById('search-input');
+        const filterFrom = document.getElementById('filter-from');
+        const filterTo = document.getElementById('filter-to');
+        function init() {
+            lucide.createIcons();
+
+            // Verificar soporte de localStorage
+            try {
+                localStorage.setItem('test_storage', 'ok');
+                localStorage.removeItem('test_storage');
+            } catch (e) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Almacenamiento restringido',
+                    text: 'El sistema ha detectado que el navegador impide guardar datos permanentemente desde este archivo local.',
+                    footer: 'Se recomienda usar Chrome, Firefox o activar "Desactivar restricciones de archivos locales" en Safari.'
+                });
+            }
+
+            const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+            const dateDisplay = document.getElementById('current-date-display');
+            if (dateDisplay) {
+                dateDisplay.innerText = new Date().toLocaleDateString('es-ES', options);
+            }
+            const fechaInput = document.getElementById('fecha');
+            if (fechaInput) {
+                fechaInput.valueAsDate = new Date();
+            }
+            const savedTheme = localStorage.getItem('theme') || 'light';
+            document.documentElement.setAttribute('data-theme', savedTheme);
+            updateThemeIcon(savedTheme);
+            setupEventListeners();
+            render();
+            updateStats();
+        }
+        function render() {
+            const list = manager.search(currentSearchQuery, currentFromDate, currentToDate);
+            if (list.length === 0) {
+                tableBody.innerHTML = '';
+                noRecordsView.style.display = 'block';
+                return;
+            }
+            noRecordsView.style.display = 'none';
+            tableBody.innerHTML = list.map(oficio => `
+                <tr data-id="${oficio.id}">
+                    <td style="font-weight: 500;">${oficio.fecha}</td>
+                    <td><span class="badge badge-primary">${oficio.numero}</span></td>
+                    <td title="${oficio.asunto}">${oficio.asunto.length > 60 ? oficio.asunto.substring(0, 60) + '...' : oficio.asunto}</td>
+                    <td>${oficio.dirigido}</td>
+                    <td>${oficio.solicita}</td>
+                    <td>
+                        <span class="badge ${getStatusClass(oficio.estado)}">
+                            ${oficio.estado}
+                        </span>
+                    </td>
+                    <td class="no-print">
+                        <div class="action-btns">
+                            <div class="pdf-group">
+                                <button class="btn-icon ${oficio.pdfData ? 'pdf-view' : 'pdf-upload'}" 
+                                        onclick="${oficio.pdfData ? `viewPDF('${oficio.id}')` : `triggerPDFUpload('${oficio.id}')`}" 
+                                        title="${oficio.pdfData ? 'Ver Documento PDF' : 'Cargar Documento PDF'}">
+                                    <i data-lucide="${oficio.pdfData ? 'file-text' : 'file-up'}" size="16"></i>
+                                </button>
+                                ${oficio.pdfData ? `
+                                <button class="btn-icon delete" onclick="deletePDF('${oficio.id}')" title="Eliminar PDF" style="width: 24px; height: 24px;">
+                                    <i data-lucide="file-x" size="14"></i>
+                                </button>
+                                ` : ''}
+                            </div>
+                            <button class="btn-icon" onclick="editOficio('${oficio.id}')" title="Editar">
+                                <i data-lucide="edit-3" size="16"></i>
+                            </button>
+                            <button class="btn-icon delete" onclick="deleteOficio('${oficio.id}')" title="Eliminar">
+                                <i data-lucide="trash-2" size="16"></i>
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+            `).join('');
+            lucide.createIcons();
+        }
+        function updateStats() {
+            const stats = manager.getStats();
+            document.getElementById('stat-total').innerText = stats.total;
+            document.getElementById('stat-month').innerText = stats.month;
+            document.getElementById('stat-week').innerText = stats.week;
+            document.getElementById('stat-year').innerText = stats.year;
+        }
+        function getStatusClass(status) {
+            switch (status) {
+                case 'Concluido': return 'badge-success';
+                case 'En Proceso': return 'badge-warning';
+                case 'Cancelado': return 'badge-error';
+                default: return 'badge-primary';
+            }
+        }
+        function setupEventListeners() {
+            document.getElementById('add-oficio-btn').onclick = () => showModal('Nuevo Registro de Oficio');
+            document.getElementById('close-modal').onclick = closeModal;
+            document.getElementById('cancel-form').onclick = closeModal;
+            oficioForm.onsubmit = (e) => {
+                e.preventDefault();
+                const formData = {
+                    fecha: document.getElementById('fecha').value,
+                    numero: document.getElementById('numero').value,
+                    asunto: document.getElementById('asunto').value,
+                    dirigido: document.getElementById('dirigido').value,
+                    solicita: document.getElementById('solicita').value,
+                    estado: document.getElementById('estado').value
+                };
+                const editId = document.getElementById('edit-id').value;
+                if (editId) {
+                    manager.update(editId, formData);
+                    Swal.fire({ icon: 'success', title: 'Actualizado', text: 'Registro actualizado.', timer: 1500, showConfirmButton: false });
+                } else {
+                    manager.add(formData);
+                    Swal.fire({ icon: 'success', title: 'Registrado', text: 'Oficio guardado.', timer: 1500, showConfirmButton: false });
+                }
+                closeModal();
+                render();
+                updateStats();
+            };
+            searchInput.oninput = (e) => { currentSearchQuery = e.target.value; render(); };
+            filterFrom.onchange = (e) => { currentFromDate = e.target.value; render(); };
+            filterTo.onchange = (e) => { currentToDate = e.target.value; render(); };
+            document.getElementById('clear-filters').onclick = () => {
+                filterFrom.value = ''; filterTo.value = ''; searchInput.value = '';
+                currentFromDate = ''; currentToDate = ''; currentSearchQuery = '';
+                render();
+            };
+            document.getElementById('theme-toggle').onclick = toggleTheme;
+            document.getElementById('print-btn').onclick = () => {
+                if (currentFromDate || currentToDate) {
+                    Swal.fire({ title: 'Reporte', text: `Generando reporte del periodo seleccionado.`, icon: 'info', timer: 1000, showConfirmButton: false })
+                        .then(() => window.print());
+                } else {
+                    window.print();
+                }
+            };
+            document.getElementById('export-filtered-btn').onclick = () => {
+                const list = manager.search(currentSearchQuery, currentFromDate, currentToDate);
+                if (list.length === 0) {
+                    Swal.fire('Sin datos', 'No hay registros para exportar.', 'warning');
+                    return;
+                }
+                const data = JSON.stringify(list, null, 2);
+                const blob = new Blob([data], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `reporte_oficios_${new Date().toISOString().split('T')[0]}.json`;
+                a.click();
+            };
+            // Nuevos Eventos
+            document.getElementById('view-records-btn').onclick = () => {
+                document.querySelector('.content-card').scrollIntoView({ behavior: 'smooth' });
+            };
+            document.getElementById('clear-all-btn').onclick = () => {
+                if (manager.oficios.length === 0) {
+                    Swal.fire('Información', 'No hay registros para limpiar.', 'info');
+                    return;
+                }
+                Swal.fire({
+                    title: '¿Limpiar todos los registros?',
+                    text: "Esta acción eliminará permanentemente TODOS los oficios guardados. Esta operación no se puede deshacer.",
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#ef4444',
+                    cancelButtonColor: '#64748b',
+                    confirmButtonText: 'Sí, limpiar todo',
+                    cancelButtonText: 'Cancelar'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        manager.clearAll();
+                        render();
+                        updateStats();
+                        Swal.fire('Limpiado', 'Todos los registros han sido eliminados.', 'success');
+                    }
+                });
+            };
+
+            // PDF Upload logic
+            document.getElementById('pdf-input').onchange = (e) => {
+                const file = e.target.files[0];
+                if (!file) return;
+
+                if (file.size > 2 * 1024 * 1024) { // 2MB Limit for localStorage safety
+                    Swal.fire('Archivo muy grande', 'Para asegurar el rendimiento, el PDF debe ser menor a 2MB.', 'warning');
+                    e.target.value = '';
+                    return;
+                }
+
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    const pdfData = event.target.result;
+                    const id = e.target.dataset.currentId;
+                    if (manager.update(id, { pdfData })) {
+                        render();
+                        Swal.fire({ icon: 'success', title: 'PDF Cargado', text: 'El documento se ha guardado correctamente.', timer: 1500, showConfirmButton: false });
+                    }
+                };
+                reader.readAsDataURL(file);
+                e.target.value = '';
+            };
+        }
+
+        window.triggerPDFUpload = (id) => {
+            const input = document.getElementById('pdf-input');
+            input.dataset.currentId = id;
+            input.click();
+        };
+
+        window.viewPDF = (id) => {
+            const oficio = manager.getById(id);
+            if (oficio && oficio.pdfData) {
+                const newWindow = window.open();
+                newWindow.document.write(`<iframe src="${oficio.pdfData}" frameborder="0" style="border:0; top:0px; left:0px; bottom:0px; right:0px; width:100%; height:100%;" allowfullscreen></iframe>`);
+                newWindow.document.title = `Documento - ${oficio.numero}`;
+            }
+        };
+
+        window.deletePDF = (id) => {
+            Swal.fire({
+                title: '¿Eliminar PDF?',
+                text: "Se eliminará el documento adjunto a este registro.",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#ef4444',
+                confirmButtonText: 'Sí, eliminar PDF'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    manager.update(id, { pdfData: null });
+                    render();
+                    Swal.fire('Eliminado', 'El PDF ha sido removido.', 'success');
+                }
+            });
+        };
+        window.editOficio = (id) => {
+            const oficio = manager.getById(id);
+            if (!oficio) return;
+            document.getElementById('edit-id').value = id;
+            document.getElementById('fecha').value = oficio.fecha;
+            document.getElementById('numero').value = oficio.numero;
+            document.getElementById('asunto').value = oficio.asunto;
+            document.getElementById('dirigido').value = oficio.dirigido;
+            document.getElementById('solicita').value = oficio.solicita;
+            document.getElementById('estado').value = oficio.estado;
+            showModal('Editar Registro de Oficio');
+        };
+        window.deleteOficio = (id) => {
+            Swal.fire({
+                title: '¿Eliminar?', text: "Esta acción no se puede deshacer.", icon: 'warning',
+                showCancelButton: true, confirmButtonColor: '#ef4444', confirmButtonText: 'Sí, eliminar'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    manager.delete(id); render(); updateStats();
+                    Swal.fire('Eliminado', 'El registro ha sido removido.', 'success');
+                }
+            });
+        };
+        function showModal(title) {
+            document.getElementById('modal-title').innerText = title;
+            oficioModal.classList.add('active');
+        }
+        function closeModal() {
+            oficioModal.classList.remove('active');
+            oficioForm.reset();
+            document.getElementById('edit-id').value = '';
+            document.getElementById('fecha').valueAsDate = new Date();
+        }
+        function toggleTheme() {
+            const current = document.documentElement.getAttribute('data-theme');
+            const next = current === 'dark' ? 'light' : 'dark';
+            document.documentElement.setAttribute('data-theme', next);
+            localStorage.setItem('theme', next);
+            updateThemeIcon(next);
+        }
+        function updateThemeIcon(theme) {
+            const icon = document.getElementById('theme-icon');
+            if (icon) {
+                icon.setAttribute('data-lucide', theme === 'dark' ? 'sun' : 'moon');
+                lucide.createIcons();
+            }
+        }
+        window.toggleBackupMenu = () => {
+            const menu = document.getElementById('backup-menu');
+            menu.style.display = menu.style.display === 'none' ? 'block' : 'none';
+        };
+        window.exportData = () => {
+            const data = JSON.stringify(manager.oficios, null, 2);
+            const blob = new Blob([data], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `respaldo_completo_${new Date().toISOString().split('T')[0]}.json`;
+            a.click();
+            toggleBackupMenu();
+        };
+        window.triggerImport = () => { document.getElementById('import-input').click(); toggleBackupMenu(); };
+        document.getElementById('import-input').onchange = (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = (event) => {
+                try {
+                    const imported = JSON.parse(event.target.result);
+                    if (Array.isArray(imported)) {
+                        Swal.fire({
+                            title: '¿Importar?', text: `Se importarán ${imported.length} registros.`,
+                            icon: 'question', showDenyButton: true, confirmButtonText: 'Combinar', denyButtonText: 'Reemplazar'
+                        }).then((result) => {
+                            if (result.isConfirmed) { manager.oficios = [...manager.oficios, ...imported]; finishImport(); }
+                            else if (result.isDenied) { manager.oficios = imported; finishImport(); }
+                        });
+                    }
+                } catch (err) { Swal.fire('Error', 'JSON no válido', 'error'); }
+            };
+            reader.readAsText(file);
+        };
+        function finishImport() { manager.save(); render(); updateStats(); Swal.fire('Éxito', 'Importación completada', 'success'); }
+        document.addEventListener('DOMContentLoaded', init);
+        window.onclick = (e) => {
+            if (!e.target.closest('.dropdown')) {
+                const menu = document.getElementById('backup-menu');
+                if (menu) menu.style.display = 'none';
+            }
+        };
     </script>
 </body>
 
