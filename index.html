@@ -552,9 +552,13 @@
             </div>
             <div class="header-actions no-print">
                 <button class="btn btn-outline" id="theme-toggle"><i data-lucide="sun" id="theme-icon"></i></button>
+                <button class="btn btn-outline" id="admin-login-btn" title="Acceso Administrativo">
+                    <i data-lucide="lock" id="admin-icon"></i>
+                </button>
                 <button class="btn btn-outline" id="view-records-btn"><i data-lucide="scroll-text"></i> Ver
                     Lista</button>
-                <button class="btn btn-primary" id="add-oficio-btn"><i data-lucide="plus"></i> Nuevo Registro</button>
+                <button class="btn btn-primary" id="add-oficio-btn" style="display: none;"><i data-lucide="plus"></i>
+                    Nuevo Registro</button>
             </div>
         </header>
 
@@ -667,6 +671,8 @@
         const SUPABASE_URL = 'https://nixqrlwookktqhtvoxgj.supabase.co';
         const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5peHFybHdvb2trdHFodHZveGdqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njg5MzAyMzAsImV4cCI6MjA4NDUwNjIzMH0.tV4h3x6vUCfkYAeMtsDFuTUO2RuQoUEJO08rwDKdDvE';
 
+        const ADMIN_PASSWORD = 'edomex2025';
+        let isAdmin = false;
         let client;
         try {
             // Using window.supabase to avoid ReferenceError
@@ -694,6 +700,7 @@
             updateThemeIcon(theme);
 
             setupEvents();
+            updateAdminUI();
             await fetchData();
         }
 
@@ -745,11 +752,19 @@
                     <td><span class="badge ${getStatusClass(o.estado)}">${o.estado}</span></td>
                     <td class="no-print">
                         <div style="display:flex; gap:8px;">
-                            <button class="btn-icon ${o.pdf_url ? 'badge-success' : 'badge-primary'}" onclick="${o.pdf_url ? `window.open('${o.pdf_url}')` : `triggerUpload('${o.id}')`}">
-                                <i data-lucide="${o.pdf_url ? 'file-text' : 'file-up'}"></i>
-                            </button>
-                            <button class="btn-icon" onclick="editItem('${o.id}')"><i data-lucide="edit-3"></i></button>
-                            <button class="btn-icon delete" onclick="deleteItem('${o.id}')"><i data-lucide="trash-2"></i></button>
+                            ${o.pdf_url ? `
+                            <button class="btn-icon badge-success" onclick="window.open('${o.pdf_url}')" title="Ver PDF">
+                                <i data-lucide="file-text"></i>
+                            </button>` : ''}
+                            
+                            ${isAdmin ? `
+                                ${!o.pdf_url ? `
+                                <button class="btn-icon badge-primary" onclick="triggerUpload('${o.id}')" title="Subir PDF">
+                                    <i data-lucide="file-up"></i>
+                                </button>` : ''}
+                                <button class="btn-icon" onclick="editItem('${o.id}')" title="Editar"><i data-lucide="edit-3"></i></button>
+                                <button class="btn-icon delete" onclick="deleteItem('${o.id}')" title="Eliminar"><i data-lucide="trash-2"></i></button>
+                            ` : ''}
                         </div>
                     </td>
                 </tr>
@@ -773,6 +788,7 @@
 
         async function save(e) {
             e.preventDefault();
+            if (!isAdmin) return Swal.fire('Acceso Denegado', 'No tienes permisos para esta acción.', 'error');
             const id = document.getElementById('edit-id').value;
             const data = {
                 fecha: document.getElementById('fecha').value,
@@ -801,6 +817,7 @@
         }
 
         window.editItem = (id) => {
+            if (!isAdmin) return Swal.fire('Acceso Denegado', 'No tienes permisos para esta acción.', 'error');
             const o = oficios.find(x => x.id === id);
             if (!o) return;
             document.getElementById('edit-id').value = id;
@@ -815,6 +832,7 @@
         };
 
         window.deleteItem = async (id) => {
+            if (!isAdmin) return Swal.fire('Acceso Denegado', 'No tienes permisos para esta acción.', 'error');
             const res = await Swal.fire({ title: '¿Eliminar?', icon: 'warning', showCancelButton: true });
             if (res.isConfirmed) {
                 showLoader(true);
@@ -825,6 +843,7 @@
         };
 
         window.triggerUpload = (id) => {
+            if (!isAdmin) return Swal.fire('Acceso Denegado', 'No tienes permisos para esta acción.', 'error');
             const inp = document.getElementById('pdf-input');
             inp.dataset.id = id;
             inp.click();
@@ -880,6 +899,31 @@
                 document.querySelector('.content-card').scrollIntoView({ behavior: 'smooth' });
             };
 
+            document.getElementById('admin-login-btn').onclick = async () => {
+                if (isAdmin) {
+                    isAdmin = false;
+                    Swal.fire('Sesión Cerrada', 'Ahora estás en modo de solo lectura.', 'info');
+                    updateAdminUI();
+                    return;
+                }
+
+                const { value: password } = await Swal.fire({
+                    title: 'Acceso Administrativo',
+                    input: 'password',
+                    inputLabel: 'Introduce la clave maestra',
+                    inputPlaceholder: 'Contraseña...',
+                    showCancelButton: true
+                });
+
+                if (password === ADMIN_PASSWORD) {
+                    isAdmin = true;
+                    Swal.fire('¡Bienvenido!', 'Modo administrador activado.', 'success');
+                    updateAdminUI();
+                } else if (password !== undefined) {
+                    Swal.fire('Error', 'Clave incorrecta.', 'error');
+                }
+            };
+
             document.getElementById('theme-toggle').onclick = () => {
                 const current = document.documentElement.getAttribute('data-theme');
                 const next = current === 'dark' ? 'light' : 'dark';
@@ -903,6 +947,23 @@
                 icon.setAttribute('data-lucide', t === 'dark' ? 'sun' : 'moon');
                 lucide.createIcons();
             }
+        }
+
+        function updateAdminUI() {
+            const addBtn = document.getElementById('add-oficio-btn');
+            const adminIcon = document.getElementById('admin-icon');
+
+            if (isAdmin) {
+                addBtn.style.display = 'inline-flex';
+                adminIcon.setAttribute('data-lucide', 'lock-open');
+                document.getElementById('admin-login-btn').classList.add('badge-success');
+            } else {
+                addBtn.style.display = 'none';
+                adminIcon.setAttribute('data-lucide', 'lock');
+                document.getElementById('admin-login-btn').classList.remove('badge-success');
+            }
+            lucide.createIcons();
+            render(); // Refresh table to show/hide edit buttons
         }
 
         document.addEventListener('DOMContentLoaded', init);
