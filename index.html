@@ -91,6 +91,8 @@
             align-items: center;
             padding: 20px 0;
             margin-bottom: 30px;
+            flex-wrap: wrap;
+            gap: 20px;
         }
 
         .brand {
@@ -126,6 +128,7 @@
             display: flex;
             gap: 12px;
             align-items: center;
+            flex-wrap: wrap;
         }
 
         /* --- Stats Dashboard --- */
@@ -227,17 +230,6 @@
             gap: 20px;
         }
 
-        .card-title {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .card-title h2 {
-            font-size: 1.25rem;
-            font-weight: 600;
-        }
-
         .search-box {
             position: relative;
             flex: 1;
@@ -327,9 +319,9 @@
             color: var(--warning);
         }
 
-        .action-btns {
-            display: flex;
-            gap: 8px;
+        .badge-error {
+            background: rgba(239, 68, 68, 0.1);
+            color: var(--error);
         }
 
         .btn-icon {
@@ -355,39 +347,6 @@
         .btn-icon.delete:hover {
             background-color: var(--error);
             border-color: var(--error);
-        }
-
-        .no-records {
-            padding: 60px;
-            text-align: center;
-            color: var(--text-light);
-        }
-
-        .no-records i {
-            margin-bottom: 16px;
-            opacity: 0.5;
-        }
-
-        /* --- PDF Buttons --- */
-        .btn-icon.pdf-upload {
-            color: var(--primary);
-        }
-
-        .btn-icon.pdf-view {
-            color: var(--success);
-            border-color: var(--success);
-            background-color: rgba(16, 185, 129, 0.05);
-        }
-
-        .btn-icon.pdf-view:hover {
-            background-color: var(--success);
-            color: white;
-        }
-
-        .pdf-group {
-            display: flex;
-            align-items: center;
-            gap: 4px;
         }
 
         /* --- Buttons --- */
@@ -450,23 +409,18 @@
         .modal-content {
             background-color: var(--bg-card);
             border-radius: var(--radius-lg);
-            width: 100%;
+            width: 90%;
             max-width: 600px;
             padding: 32px;
             box-shadow: var(--shadow-lg);
             transform: scale(0.9);
             transition: transform 0.3s ease;
+            max-height: 90vh;
+            overflow-y: auto;
         }
 
         .modal.active .modal-content {
             transform: scale(1);
-        }
-
-        .modal-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 24px;
         }
 
         .form-grid {
@@ -502,45 +456,6 @@
             outline: none;
         }
 
-        .form-group input:focus,
-        .form-group textarea:focus {
-            border-color: var(--primary);
-        }
-
-        /* --- New Filter Styles --- */
-        .date-filters {
-            display: flex;
-            gap: 12px;
-            align-items: center;
-            background-color: var(--bg-body);
-            padding: 8px 16px;
-            border-radius: var(--radius-md);
-            border: 1px solid var(--border);
-        }
-
-        .filter-group {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .filter-group label {
-            font-size: 0.75rem;
-            font-weight: 600;
-            color: var(--text-muted);
-            text-transform: uppercase;
-        }
-
-        .filter-group input {
-            padding: 6px 10px;
-            border: 1px solid var(--border);
-            border-radius: var(--radius-sm);
-            font-size: 0.875rem;
-            background: var(--bg-card);
-            color: var(--text-main);
-        }
-
-        /* --- Loading State --- */
         .loader-overlay {
             position: fixed;
             top: 0;
@@ -561,7 +476,6 @@
             border-bottom-color: transparent;
             border-radius: 50%;
             display: inline-block;
-            box-sizing: border-box;
             animation: rotation 1s linear infinite;
         }
 
@@ -575,14 +489,35 @@
             }
         }
 
-        /* Print Settings */
-        @media print {
+        .date-filters {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
 
-            .no-print,
-            header,
-            .card-header .btn,
-            .action-btns,
-            .header-actions {
+        .no-records {
+            padding: 60px;
+            text-align: center;
+            color: var(--text-light);
+        }
+
+        @media (max-width: 768px) {
+            .form-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .full-width {
+                grid-column: span 1;
+            }
+
+            .card-header {
+                padding: 15px;
+            }
+        }
+
+        @media print {
+            .no-print {
                 display: none !important;
             }
 
@@ -595,10 +530,6 @@
                 box-shadow: none;
                 border: none;
             }
-
-            body {
-                background: white;
-            }
         }
     </style>
 </head>
@@ -609,93 +540,69 @@
     </div>
 
     <div class="app-container">
-        <!-- Header -->
         <header>
             <div class="brand">
-                <div class="logo-container">
-                    <i data-lucide="file-text" size="28"></i>
-                </div>
+                <div class="logo-container"><i data-lucide="file-text" size="28"></i></div>
                 <div class="brand-info">
                     <h1>Control de Oficios</h1>
-                    <p id="current-date-display">Sistema Sincronizado con Supabase</p>
+                    <p id="current-date-display">Cargando fecha...</p>
                 </div>
             </div>
             <div class="header-actions no-print">
-                <button class="btn btn-outline" id="theme-toggle" title="Cambiar Tema">
-                    <i data-lucide="sun" id="theme-icon"></i>
-                </button>
-                <button class="btn btn-primary" id="add-oficio-btn">
-                    <i data-lucide="plus"></i> Nuevo Registro
-                </button>
+                <button class="btn btn-outline" id="theme-toggle"><i data-lucide="sun" id="theme-icon"></i></button>
+                <button class="btn btn-outline" id="view-records-btn"><i data-lucide="scroll-text"></i> Ver
+                    Lista</button>
+                <button class="btn btn-primary" id="add-oficio-btn"><i data-lucide="plus"></i> Nuevo Registro</button>
             </div>
         </header>
 
-        <!-- Stats Dashboard -->
         <div class="stats-grid">
             <div class="stat-card">
                 <div class="stat-icon"><i data-lucide="files"></i></div>
                 <div class="stat-data">
                     <div class="number" id="stat-total">0</div>
-                    <div class="label">Total Oficios</div>
+                    <div class="label">Total</div>
                 </div>
             </div>
             <div class="stat-card success">
                 <div class="stat-icon"><i data-lucide="calendar"></i></div>
                 <div class="stat-data">
                     <div class="number" id="stat-month">0</div>
-                    <div class="label">Este Mes</div>
+                    <div class="label">Mes</div>
                 </div>
             </div>
             <div class="stat-card accent">
                 <div class="stat-icon"><i data-lucide="clock"></i></div>
                 <div class="stat-data">
                     <div class="number" id="stat-week">0</div>
-                    <div class="label">Última Semana</div>
+                    <div class="label">Semana</div>
                 </div>
             </div>
             <div class="stat-card warning">
                 <div class="stat-icon"><i data-lucide="check-circle"></i></div>
                 <div class="stat-data">
                     <div class="number" id="stat-year">0</div>
-                    <div class="label">Este Año</div>
+                    <div class="label">Año</div>
                 </div>
             </div>
         </div>
 
-        <!-- Main Content -->
         <div class="content-card">
             <div class="card-header no-print">
-                <div class="card-title">
-                    <i data-lucide="list"></i>
-                    <h2>Registros en la Nube</h2>
-                </div>
                 <div class="search-box">
                     <i data-lucide="search"></i>
-                    <input type="text" id="search-input" placeholder="Buscar por número, asunto o destinatario...">
+                    <input type="text" id="search-input" placeholder="Buscar registros...">
                 </div>
-                <!-- Date Filters -->
-                <div class="date-filters no-print">
-                    <div class="filter-group">
-                        <label>Desde:</label>
-                        <input type="date" id="filter-from">
-                    </div>
-                    <div class="filter-group">
-                        <label>Hasta:</label>
-                        <input type="date" id="filter-to">
-                    </div>
-                    <button class="btn btn-outline" id="clear-filters" title="Limpiar Filtros">
-                        <i data-lucide="filter-x"></i>
-                    </button>
+                <div class="date-filters">
+                    <input type="date" id="filter-from">
+                    <input type="date" id="filter-to">
+                    <button class="btn btn-outline" id="clear-filters"><i data-lucide="filter-x"></i></button>
                 </div>
-                <div class="btn-group">
-                    <button class="btn btn-primary" id="print-btn">
-                        <i data-lucide="printer"></i> Imprimir Reporte
-                    </button>
-                </div>
+                <button class="btn btn-primary" id="print-btn"><i data-lucide="printer"></i> Imprimir</button>
             </div>
 
             <div class="table-container">
-                <table id="oficios-table">
+                <table>
                     <thead>
                         <tr>
                             <th>Fecha</th>
@@ -707,113 +614,98 @@
                             <th class="no-print">Acciones</th>
                         </tr>
                     </thead>
-                    <tbody id="table-body">
-                        <!-- Content via JS -->
-                    </tbody>
+                    <tbody id="table-body"></tbody>
                 </table>
-                <div id="no-records-view" class="no-records" style="display: none;">
+                <div id="no-records-view" class="no-records">
                     <i data-lucide="inbox" size="48"></i>
-                    <p>Cargando datos desde Supabase...</p>
+                    <p>Cargando registros...</p>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Modal Form -->
+    <!-- Modal -->
     <div class="modal" id="oficio-modal">
         <div class="modal-content">
-            <div class="modal-header">
-                <h2 id="modal-title">Nuevo Registro de Oficio</h2>
+            <div class="modal-header" style="display:flex; justify-content:space-between; margin-bottom:24px;">
+                <h2 id="modal-title">Registro</h2>
                 <button class="btn-icon" id="close-modal"><i data-lucide="x"></i></button>
             </div>
             <form id="oficio-form">
                 <input type="hidden" id="edit-id">
                 <div class="form-grid">
-                    <div class="form-group">
-                        <label for="fecha">Fecha del Oficio</label>
-                        <input type="date" id="fecha" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="numero">Número de Oficio</label>
-                        <input type="text" id="numero" placeholder="Ej: OF-2025-001" required>
-                    </div>
+                    <div class="form-group"><label>Fecha</label><input type="date" id="fecha" required></div>
+                    <div class="form-group"><label>Número</label><input type="text" id="numero" required></div>
+                    <div class="form-group full-width"><label>Asunto</label><textarea id="asunto" rows="3"
+                            required></textarea></div>
+                    <div class="form-group"><label>Dirigido A</label><input type="text" id="dirigido" required></div>
+                    <div class="form-group"><label>Solicitante</label><input type="text" id="solicita" required></div>
                     <div class="form-group full-width">
-                        <label for="asunto">Asunto / Motivo</label>
-                        <textarea id="asunto" rows="3" placeholder="Descripción detallada del asunto..."
-                            required></textarea>
-                    </div>
-                    <div class="form-group">
-                        <label for="dirigido">Dirigido A</label>
-                        <input type="text" id="dirigido" placeholder="Nombre o Dependencia" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="solicita">Solicitado Por</label>
-                        <input type="text" id="solicita" placeholder="Nombre del solicitante" required>
-                    </div>
-                    <div class="form-group full-width">
-                        <label for="estado">Estado</label>
+                        <label>Estado</label>
                         <select id="estado">
-                            <option value="Registrado">Registrado</option>
-                            <option value="En Proceso">En Proceso</option>
-                            <option value="Concluido">Concluido</option>
-                            <option value="Cancelado">Cancelado</option>
+                            <option>Registrado</option>
+                            <option>En Proceso</option>
+                            <option>Concluido</option>
+                            <option>Cancelado</option>
                         </select>
                     </div>
                 </div>
-                <div style="margin-top: 32px; display: flex; justify-content: flex-end; gap: 12px;">
+                <div style="margin-top:24px; display:flex; justify-content:flex-end; gap:12px;">
                     <button type="button" class="btn btn-outline" id="cancel-form">Cancelar</button>
-                    <button type="submit" class="btn btn-primary" id="save-btn">Guardar en la Nube</button>
+                    <button type="submit" class="btn btn-primary">Guardar</button>
                 </div>
             </form>
         </div>
     </div>
 
-    <!-- Hidden file inputs -->
     <input type="file" id="pdf-input" style="display:none" accept="application/pdf">
 
     <script>
-        // Supabase Configuration
+        // CRITICAL FIX: Ensure supabase is accessed from window
         const SUPABASE_URL = 'https://nixqrlwookktqhtvoxgj.supabase.co';
         const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5peHFybHdvb2trdHFodHZveGdqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njg5MzAyMzAsImV4cCI6MjA4NDUwNjIzMH0.tV4h3x6vUCfkYAeMtsDFuTUO2RuQoUEJO08rwDKdDvE';
-        const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+        let client;
+        try {
+            // Using window.supabase to avoid ReferenceError
+            client = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+        } catch (e) {
+            console.error("Supabase load error", e);
+        }
 
         let oficios = [];
-        let currentSearchQuery = '';
-        let currentFromDate = '';
-        let currentToDate = '';
+        let query = '', from = '', to = '';
 
-        // DOM Elements
         const tableBody = document.getElementById('table-body');
-        const noRecordsView = document.getElementById('no-records-view');
-        const loader = document.getElementById('global-loader');
-        const oficioModal = document.getElementById('oficio-modal');
-        const oficioForm = document.getElementById('oficio-form');
+        const emptyView = document.getElementById('no-records-view');
 
         async function init() {
             lucide.createIcons();
-            const savedTheme = localStorage.getItem('theme') || 'light';
-            document.documentElement.setAttribute('data-theme', savedTheme);
-            updateThemeIcon(savedTheme);
 
-            setupEventListeners();
-            await loadData();
+            // Set current date
+            const dateDisplay = document.getElementById('current-date-display');
+            dateDisplay.innerText = new Date().toLocaleDateString('es-ES', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+            document.getElementById('fecha').valueAsDate = new Date();
+
+            const theme = localStorage.getItem('theme') || 'light';
+            document.documentElement.setAttribute('data-theme', theme);
+            updateThemeIcon(theme);
+
+            setupEvents();
+            await fetchData();
         }
 
-        async function loadData() {
+        async function fetchData() {
             showLoader(true);
             try {
-                const { data, error } = await supabase
-                    .from('oficios')
-                    .select('*')
-                    .order('fecha', { ascending: false });
-
+                const { data, error } = await client.from('oficios').select('*').order('fecha', { ascending: false });
                 if (error) throw error;
                 oficios = data || [];
                 render();
                 updateStats();
             } catch (err) {
-                console.error("Error cargando datos:", err);
-                Swal.fire('Error', 'No se pudieron cargar los datos de Supabase', 'error');
+                console.error(err);
+                Swal.fire('Error de Conexión', 'No se pudo conectar con la base de datos.', 'error');
             } finally {
                 showLoader(false);
             }
@@ -821,46 +713,41 @@
 
         function render() {
             let filtered = oficios;
-
-            if (currentSearchQuery) {
-                const q = currentSearchQuery.toLowerCase();
+            if (query) {
+                const q = query.toLowerCase();
                 filtered = filtered.filter(o =>
                     o.numero.toLowerCase().includes(q) ||
                     (o.asunto || '').toLowerCase().includes(q) ||
-                    (o.dirigido || '').toLowerCase().includes(q) ||
-                    (o.solicita || '').toLowerCase().includes(q)
+                    (o.dirigido || '').toLowerCase().includes(q)
                 );
             }
-
-            if (currentFromDate) filtered = filtered.filter(o => o.fecha >= currentFromDate);
-            if (currentToDate) filtered = filtered.filter(o => o.fecha <= currentToDate);
+            if (from) filtered = filtered.filter(o => o.fecha >= from);
+            if (to) filtered = filtered.filter(o => o.fecha <= to);
 
             if (filtered.length === 0) {
                 tableBody.innerHTML = '';
-                noRecordsView.style.display = 'block';
-                noRecordsView.innerHTML = '<i data-lucide="inbox" size="48"></i><p>No se encontraron registros.</p>';
+                emptyView.style.display = 'block';
+                emptyView.innerHTML = '<i data-lucide="inbox" size="48"></i><p>No hay registros.</p>';
                 lucide.createIcons();
                 return;
             }
 
-            noRecordsView.style.display = 'none';
-            tableBody.innerHTML = filtered.map(oficio => `
+            emptyView.style.display = 'none';
+            tableBody.innerHTML = filtered.map(o => `
                 <tr>
-                    <td style="font-weight: 500;">${formatDate(oficio.fecha)}</td>
-                    <td><span class="badge badge-primary">${oficio.numero}</span></td>
-                    <td title="${oficio.asunto}">${oficio.asunto.length > 50 ? oficio.asunto.substring(0, 50) + '...' : oficio.asunto}</td>
-                    <td>${oficio.dirigido}</td>
-                    <td>${oficio.solicita}</td>
-                    <td><span class="badge ${getStatusClass(oficio.estado)}">${oficio.estado}</span></td>
+                    <td>${o.fecha.split('-').reverse().join('/')}</td>
+                    <td><span class="badge badge-primary">${o.numero}</span></td>
+                    <td title="${o.asunto}">${o.asunto.length > 50 ? o.asunto.substring(0, 50) + '...' : o.asunto}</td>
+                    <td>${o.dirigido}</td>
+                    <td>${o.solicita}</td>
+                    <td><span class="badge ${getStatusClass(o.estado)}">${o.estado}</span></td>
                     <td class="no-print">
-                        <div class="action-btns">
-                            <button class="btn-icon ${oficio.pdf_url ? 'pdf-view' : 'pdf-upload'}" 
-                                    onclick="${oficio.pdf_url ? `window.open('${oficio.pdf_url}')` : `triggerPDFUpload('${oficio.id}')`}" 
-                                    title="${oficio.pdf_url ? 'Ver PDF' : 'Subir PDF'}">
-                                <i data-lucide="${oficio.pdf_url ? 'file-text' : 'file-up'}"></i>
+                        <div style="display:flex; gap:8px;">
+                            <button class="btn-icon ${o.pdf_url ? 'badge-success' : 'badge-primary'}" onclick="${o.pdf_url ? `window.open('${o.pdf_url}')` : `triggerUpload('${o.id}')`}">
+                                <i data-lucide="${o.pdf_url ? 'file-text' : 'file-up'}"></i>
                             </button>
-                            <button class="btn-icon" onclick="editOficio('${oficio.id}')"><i data-lucide="edit-3"></i></button>
-                            <button class="btn-icon delete" onclick="deleteOficio('${oficio.id}')"><i data-lucide="trash-2"></i></button>
+                            <button class="btn-icon" onclick="editItem('${o.id}')"><i data-lucide="edit-3"></i></button>
+                            <button class="btn-icon delete" onclick="deleteItem('${o.id}')"><i data-lucide="trash-2"></i></button>
                         </div>
                     </td>
                 </tr>
@@ -870,20 +757,22 @@
 
         function updateStats() {
             const now = new Date();
-            const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0];
-            const startOfYear = new Date(now.getFullYear(), 0, 1).toISOString().split('T')[0];
-            const oneWeekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+            const startMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().substring(0, 10);
+            const startYear = new Date(now.getFullYear(), 0, 1).toISOString().substring(0, 10);
 
             document.getElementById('stat-total').innerText = oficios.length;
-            document.getElementById('stat-month').innerText = oficios.filter(o => o.fecha >= startOfMonth).length;
-            document.getElementById('stat-week').innerText = oficios.filter(o => o.fecha >= oneWeekAgo).length;
-            document.getElementById('stat-year').innerText = oficios.filter(o => o.fecha >= startOfYear).length;
+            document.getElementById('stat-month').innerText = oficios.filter(o => o.fecha >= startMonth).length;
+            document.getElementById('stat-year').innerText = oficios.filter(o => o.fecha >= startYear).length;
+            document.getElementById('stat-week').innerText = oficios.filter(o => {
+                const d = new Date(o.fecha);
+                return (now - d) < 7 * 24 * 60 * 60 * 1000;
+            }).length;
         }
 
-        async function saveOficio(e) {
+        async function save(e) {
             e.preventDefault();
             const id = document.getElementById('edit-id').value;
-            const formData = {
+            const data = {
                 fecha: document.getElementById('fecha').value,
                 numero: document.getElementById('numero').value,
                 asunto: document.getElementById('asunto').value,
@@ -895,150 +784,98 @@
             showLoader(true);
             try {
                 if (id) {
-                    const { error } = await supabase.from('oficios').update(formData).eq('id', id);
-                    if (error) throw error;
+                    await client.from('oficios').update(data).eq('id', id);
                 } else {
-                    const { error } = await supabase.from('oficios').insert([formData]);
-                    if (error) throw error;
+                    await client.from('oficios').insert([data]);
                 }
                 closeModal();
-                await loadData();
-                Swal.fire('Éxito', 'Registro guardado en Supabase', 'success');
-            } catch (err) {
-                Swal.fire('Error', 'No se pudo guardar: ' + err.message, 'error');
+                await fetchData();
+                Swal.fire('Éxito', 'Cambios guardados correctamente.', 'success');
+            } catch (e) {
+                Swal.fire('Error', 'Hubo un fallo al guardar.', 'error');
             } finally {
                 showLoader(false);
             }
         }
 
-        async function deleteOficio(id) {
-            const result = await Swal.fire({
-                title: '¿Eliminar registro?',
-                text: "Se borrará permanentemente de la base de datos.",
-                icon: 'warning',
-                showCancelButton: true,
-                confirmButtonColor: '#ef4444',
-                confirmButtonText: 'Sí, eliminar'
-            });
-
-            if (result.isConfirmed) {
-                showLoader(true);
-                try {
-                    const { error } = await supabase.from('oficios').delete().eq('id', id);
-                    if (error) throw error;
-                    await loadData();
-                    Swal.fire('Eliminado', 'Registro borrado.', 'success');
-                } catch (err) {
-                    Swal.fire('Error', err.message, 'error');
-                } finally {
-                    showLoader(false);
-                }
-            }
-        }
-
-        function triggerPDFUpload(id) {
-            const input = document.getElementById('pdf-input');
-            input.dataset.oficioId = id;
-            input.click();
-        }
-
-        document.getElementById('pdf-input').onchange = async (e) => {
-            const file = e.target.files[0];
-            const oficioId = e.target.dataset.oficioId;
-            if (!file || !oficioId) return;
-
-            showLoader(true);
-            try {
-                const fileExt = file.name.split('.').pop();
-                const fileName = `${oficioId}_${Math.random()}.${fileExt}`;
-                const filePath = `pdfs/${fileName}`;
-
-                // Upload to Supabase Storage
-                const { error: uploadError } = await supabase.storage
-                    .from('oficios-pdfs')
-                    .upload(filePath, file);
-
-                if (uploadError) throw uploadError;
-
-                // Get Public URL
-                const { data: { publicUrl } } = supabase.storage
-                    .from('oficios-pdfs')
-                    .getPublicUrl(filePath);
-
-                // Update database
-                const { error: dbError } = await supabase
-                    .from('oficios')
-                    .update({ pdf_url: publicUrl })
-                    .eq('id', oficioId);
-
-                if (dbError) throw dbError;
-
-                await loadData();
-                Swal.fire('PDF Subido', 'El archivo se guardó en la nube.', 'success');
-            } catch (err) {
-                Swal.fire('Error al subir', err.message, 'error');
-            } finally {
-                showLoader(false);
-                e.target.value = '';
-            }
-        };
-
-        // Utility Functions
-        function formatDate(dateStr) {
-            const [y, m, d] = dateStr.split('-');
-            return `${d}/${m}/${y}`;
-        }
-
-        function getStatusClass(status) {
-            if (status === 'Concluido') return 'badge-success';
-            if (status === 'En Proceso') return 'badge-warning';
-            if (status === 'Cancelado') return 'badge-error';
-            return 'badge-primary';
-        }
-
-        function showLoader(show) {
-            loader.style.display = show ? 'flex' : 'none';
-        }
-
-        function showModal(title, id = '') {
-            document.getElementById('modal-title').innerText = title;
-            document.getElementById('edit-id').value = id;
-            oficioModal.classList.add('active');
-        }
-
-        function closeModal() {
-            oficioModal.classList.remove('active');
-            oficioForm.reset();
-            document.getElementById('fecha').valueAsDate = new Date();
-        }
-
-        function editOficio(id) {
+        window.editItem = (id) => {
             const o = oficios.find(x => x.id === id);
             if (!o) return;
+            document.getElementById('edit-id').value = id;
             document.getElementById('fecha').value = o.fecha;
             document.getElementById('numero').value = o.numero;
             document.getElementById('asunto').value = o.asunto;
             document.getElementById('dirigido').value = o.dirigido;
             document.getElementById('solicita').value = o.solicita;
             document.getElementById('estado').value = o.estado;
-            showModal('Editar Registro', id);
-        }
+            document.getElementById('modal-title').innerText = 'Editar Registro';
+            document.getElementById('oficio-modal').classList.add('active');
+        };
 
-        function setupEventListeners() {
-            document.getElementById('add-oficio-btn').onclick = () => showModal('Nuevo Registro de Oficio');
+        window.deleteItem = async (id) => {
+            const res = await Swal.fire({ title: '¿Eliminar?', icon: 'warning', showCancelButton: true });
+            if (res.isConfirmed) {
+                showLoader(true);
+                await client.from('oficios').delete().eq('id', id);
+                await fetchData();
+                showLoader(false);
+            }
+        };
+
+        window.triggerUpload = (id) => {
+            const inp = document.getElementById('pdf-input');
+            inp.dataset.id = id;
+            inp.click();
+        };
+
+        document.getElementById('pdf-input').onchange = async (e) => {
+            const file = e.target.files[0];
+            const id = e.target.dataset.id;
+            if (!file) return;
+
+            showLoader(true);
+            try {
+                const name = `pdf_${id}_${Date.now()}.pdf`;
+                const { error: upErr } = await client.storage.from('oficios-pdfs').upload(name, file);
+                if (upErr) throw upErr;
+
+                const { data: { publicUrl } } = client.storage.from('oficios-pdfs').getPublicUrl(name);
+                await client.from('oficios').update({ pdf_url: publicUrl }).eq('id', id);
+
+                await fetchData();
+                Swal.fire('PDF Subido', 'El archivo está seguro en la nube.', 'success');
+            } catch (err) {
+                Swal.fire('Error', 'No se pudo subir el PDF.', 'error');
+            } finally {
+                showLoader(false);
+            }
+        };
+
+        function setupEvents() {
+            document.getElementById('add-oficio-btn').onclick = () => {
+                document.getElementById('oficio-form').reset();
+                document.getElementById('edit-id').value = '';
+                document.getElementById('fecha').valueAsDate = new Date();
+                document.getElementById('modal-title').innerText = 'Nuevo Registro';
+                document.getElementById('oficio-modal').classList.add('active');
+            };
             document.getElementById('close-modal').onclick = closeModal;
             document.getElementById('cancel-form').onclick = closeModal;
-            oficioForm.onsubmit = saveOficio;
+            document.getElementById('oficio-form').onsubmit = save;
 
-            document.getElementById('search-input').oninput = (e) => { currentSearchQuery = e.target.value; render(); };
-            document.getElementById('filter-from').onchange = (e) => { currentFromDate = e.target.value; render(); };
-            document.getElementById('filter-to').onchange = (e) => { currentToDate = e.target.value; render(); };
+            document.getElementById('search-input').oninput = (e) => { query = e.target.value; render(); };
+            document.getElementById('filter-from').onchange = (e) => { from = e.target.value; render(); };
+            document.getElementById('filter-to').onchange = (e) => { to = e.target.value; render(); };
             document.getElementById('clear-filters').onclick = () => {
                 document.getElementById('search-input').value = '';
                 document.getElementById('filter-from').value = '';
                 document.getElementById('filter-to').value = '';
-                currentSearchQuery = ''; currentFromDate = ''; currentToDate = '';
-                render();
+                query = ''; from = ''; to = ''; render();
+            };
+
+            document.getElementById('print-btn').onclick = () => window.print();
+            document.getElementById('view-records-btn').onclick = () => {
+                document.querySelector('.content-card').scrollIntoView({ behavior: 'smooth' });
             };
 
             document.getElementById('theme-toggle').onclick = () => {
@@ -1048,19 +885,25 @@
                 localStorage.setItem('theme', next);
                 updateThemeIcon(next);
             };
-
-            document.getElementById('print-btn').onclick = () => window.print();
         }
 
-        function updateThemeIcon(theme) {
+        function closeModal() { document.getElementById('oficio-modal').classList.remove('active'); }
+        function showLoader(s) { document.getElementById('global-loader').style.display = s ? 'flex' : 'none'; }
+        function getStatusClass(s) {
+            if (s === 'Concluido') return 'badge-success';
+            if (s === 'En Proceso') return 'badge-warning';
+            if (s === 'Cancelado') return 'badge-error';
+            return 'badge-primary';
+        }
+        function updateThemeIcon(t) {
             const icon = document.getElementById('theme-icon');
             if (icon) {
-                icon.setAttribute('data-lucide', theme === 'dark' ? 'sun' : 'moon');
+                icon.setAttribute('data-lucide', t === 'dark' ? 'sun' : 'moon');
                 lucide.createIcons();
             }
         }
 
-        init();
+        document.addEventListener('DOMContentLoaded', init);
     </script>
 </body>
 
